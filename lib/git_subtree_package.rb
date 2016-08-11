@@ -26,14 +26,20 @@ class GitSubtreePackage
 
     opt = OptionParser.new
 
-    @private = false
+
+
+    private_flag = false
+    github = nil
 
     opt.on('-p') do |v|
-      @private = true
+      private_flag = true
     end
     opt.on('--github') do |v|
-      @github = true
+      github = true
     end
+
+    @private = private_flag
+    @github = github
 
     argv = opt.parse(ARGV)
 
@@ -107,7 +113,7 @@ class GitSubtreePackage
     here = Dir.pwd
 
     puts_flush "here #{here}"
-    puts_flush "@github #{@github}"
+    puts_flush "@github #{@github.inspect}"
 
     if @github
       self.cd_to_root
