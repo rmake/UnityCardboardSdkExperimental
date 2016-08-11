@@ -186,11 +186,11 @@ class GitSubtreePackage
     root = Dir.pwd
 
     lib_path = Pathname.new(File.join(here, sub_path
-      ).relative_path_from(Pathname.new(root))).to_s
+      )).relative_path_from(Pathname.new(root)).to_s
 
     o = self.read_json
 
-    self.push_common(lib_path, o["packages"]["repos_url"], branch)
+    self.push_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
   end
 
   def pull(args)
@@ -206,11 +206,11 @@ class GitSubtreePackage
     root = Dir.pwd
 
     lib_path = Pathname.new(File.join(here, sub_path
-      ).relative_path_from(Pathname.new(root))).to_s
+      )).relative_path_from(Pathname.new(root)).to_s
 
     o = self.read_json
 
-    self.pull_common(lib_path, o["packages"]["repos_url"], branch)
+    self.pull_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
 
   end
 
