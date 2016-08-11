@@ -19,36 +19,37 @@ class GitSubtreePackage
     end
   end
 
-  def self.run
-    package = GitSubtreePackage.new
-
+  def run
     mode = nil
 
     opt = OptionParser.new
 
-
-
-    private_flag = false
-    github = nil
+    options = {
+      :private => false,
+      :github => false,
+    }
 
     opt.on('-p') do |v|
-      private_flag = true
+      @private = true
     end
     opt.on('--github') do |v|
-      github = true
+      @github= true
     end
-
-    @private = private_flag
-    @github = github
 
     argv = opt.parse(ARGV)
 
     case argv[0]
     when "init"
-      package.init
+      self.init
     when "split"
-      package.split argv[1..-1]
+      self.split argv[1..-1]
     end
+  end
+
+  def self.run
+    package = GitSubtreePackage.new
+
+    package.run
 
   end
 
