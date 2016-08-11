@@ -254,8 +254,7 @@ class GitSubtreePackage
     puts_flush "root #{root}"
 
     Dir.chdir here
-    Dir.chdir sub_path
-    sub_absolute_path = Dir.pwd
+    sub_absolute_path = File.join(here,sub_path)
 
     lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
 
