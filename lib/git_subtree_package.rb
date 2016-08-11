@@ -274,10 +274,12 @@ class GitSubtreePackage
   end
 
   def remove(args)
-    # ruby git_subtree_package/lib/git_subtree_package.rb add git_subtree_package
+    # ruby git_subtree_package/lib/git_subtree_package.rb remove git_subtree_package
     # ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
 
     sub_path = args[0]
+
+    here = Dir.pwd
 
     self.cd_to_root
     root = Dir.pwd
