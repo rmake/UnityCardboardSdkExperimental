@@ -1,7 +1,7 @@
 require "json"
 require "fileutils"
 require "optparse"
-require "open3"
+require "pathname"
 
 class GitSubtreePackage
 
@@ -20,17 +20,28 @@ class GitSubtreePackage
   end
 
   def self.run
-
-
     package = GitSubtreePackage.new
 
     mode = nil
 
-    case ARGV[0]
+    opt = OptionParser.new
+
+    @private = false
+
+    opt.on('-p') do |v|
+      @private = true
+    end
+    opt.on('--github') do |v|
+      @github = true
+    end
+
+    argv = opt.parse(ARGV)
+
+    case argv[0]
     when "init"
       package.init
     when "split"
-      package.split ARGV[1..-1]
+      package.split argv[1..-1]
     end
 
   end
@@ -59,48 +70,82 @@ class GitSubtreePackage
     end
   end
 
+  def push_common(lib_path, repos_url, branch)
+    puts_flush "lib_path #{lib_path}"
+    puts_flush "repos_url #{repos_url}"
+
+    self.call_system "git subtree push --prefix=#{lib_path} #{repos_url} #{branch}"
+    self.call_system "git subtree split --prefix=#{lib_path} --rejoin"
+
+  end
+
+  def split_common(lib_path, repos_url, branch)
+
+    o = self.read_json
+
+    self.push_common(lib_path, repos_url, branch)
+
+    o["packages"][lib_path] = {
+      "repos_url" => repos_url
+    }
+
+    self.write_json o
+  end
+
   def split(args)
 
-    # ruby git_subtree_package/lib/git_subtree_package.rb split test_package tmp/test_package
+    # ruby git_subtree_package/lib/git_subtree_package.rb split git_subtree_package ../git_subtree_package
+    # ruby git_subtree_package/lib/git_subtree_package.rb split test_package tmp/test_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split test_package dycoon/test_package master
 
     puts_flush "args #{args.inspect}"
 
     sub_path = args[0]
     repos_path = args[1]
+    branch = args[2] || "master"
 
     here = Dir.pwd
 
     puts_flush "here #{here}"
 
-    FileUtils.mkdir_p repos_path
-    Dir.chdir repos_path
-    repos_absolute_path = Dir.pwd
+    if @github
+      self.cd_to_root
+      tmp_repos = "git_subtree_package/tmp/tmp_repos"
+      FileUtils.mkdir_p "git_subtree_package/tmp/tmp_repos"
+      Dir.chdir "git_subtree_package/tmp/tmp_repos"
+      self.call_system "git init"
+      flag = @private ? "-p" : ""
+      self.call_system "hub create #{flag} #{repos_path}"
+      repos_url = "git@github.com:#{repos_path}.git"
 
-    puts_flush "repos_absolute_path #{repos_absolute_path}"
+    else
+      FileUtils.mkdir_p repos_path
+      Dir.chdir repos_path
+      repos_absolute_path = Dir.pwd
+      puts_flush "repos_absolute_path #{repos_absolute_path}"
 
-    self.call_system "git init --bare"
+      self.call_system "git init --bare"
+    end
 
     Dir.chdir here
     self.cd_to_root
     root = Dir.pwd
 
+    unless @github
+      repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+    end
+
     puts_flush "root #{root}"
-
-    o = self.read_json
-
 
     Dir.chdir here
     Dir.chdir sub_path
     sub_absolute_path = Dir.pwd
 
-    lib_path = Pathname.new(root).relative_path_from(sub_absolute_path).to_s
-    repos_url = Pathname.new(root).relative_path_from(repos_absolute_path).to_s
+    lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
 
-    puts_flush "lib_path #{lib_path}"
-    puts_flush "repos_url #{repos_url}"
+    Dir.chdir root
 
-    self.call_system "git subtree push --prefix=#{lib_path} #{repos_url} master"
-    self.call_system "git subtree split --prefix=#{lib_path} --rejoin"
+    split_common(lib_path, repos_url, branch)
 
   end
 
