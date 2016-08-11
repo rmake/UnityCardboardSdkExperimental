@@ -49,6 +49,8 @@ class GitSubtreePackage
       self.pull argv[1..-1]
     when "add"
       self.add argv[1..-1]
+    when "remove"
+      self.remove argv[1..-1]
     end
   end
 
@@ -211,6 +213,77 @@ class GitSubtreePackage
     o = self.read_json
 
     self.pull_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
+
+  end
+
+  def add(args)
+    # ruby git_subtree_package/lib/git_subtree_package.rb add git_subtree_package ../git_subtree_package
+    # ruby git_subtree_package/lib/git_subtree_package.rb add test_package tmp/test_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb --github add test_package dycoon/test_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb --github add git_subtree_package dycoon/git_subtree_package
+
+    puts_flush "args #{args.inspect}"
+
+    sub_path = args[0]
+    repos_path = args[1]
+    branch = args[2] || "master"
+
+    here = Dir.pwd
+
+    puts_flush "here #{here}"
+    puts_flush "@github #{@github.inspect}"
+
+    if @github
+      repos_url = "git@github.com:#{repos_path}.git"
+
+    else
+      FileUtils.mkdir_p repos_path
+      Dir.chdir repos_path
+      repos_absolute_path = Dir.pwd
+      puts_flush "repos_absolute_path #{repos_absolute_path}"
+    end
+
+    Dir.chdir here
+    self.cd_to_root
+    root = Dir.pwd
+
+    unless @github
+      repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+    end
+
+    puts_flush "root #{root}"
+
+    Dir.chdir here
+    Dir.chdir sub_path
+    sub_absolute_path = Dir.pwd
+
+    lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
+
+    #
+    self.call_system "git subtree add --prefix=#{lib_path} #{repos_url} #{branch}"
+
+    #
+    o = self.read_json
+
+    o["packages"][lib_path] = {
+      "repos_url" => repos_url
+    }
+
+    self.write_json o
+
+  end
+
+  def remove(args)
+    # ruby git_subtree_package/lib/git_subtree_package.rb add git_subtree_package
+    # ruby git_subtree_package/lib/git_subtree_package.rb add test_package
+
+    sub_path = args[0]
+
+    o = self.read_json
+
+    o["packages"].delete lib_path
+
+    self.write_json o
 
   end
 
