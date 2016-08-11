@@ -43,6 +43,12 @@ class GitSubtreePackage
       self.init
     when "split"
       self.split argv[1..-1]
+    when "push"
+      self.push argv[1..-1]
+    when "pull"
+      self.pull argv[1..-1]
+    when "add"
+      self.add argv[1..-1]
     end
   end
 
@@ -86,6 +92,14 @@ class GitSubtreePackage
 
   end
 
+  def pull_common(lib_path, repos_url, branch)
+    puts_flush "lib_path #{lib_path}"
+    puts_flush "repos_url #{repos_url}"
+
+    self.call_system "git subtree pull  -m'merge' --prefix=#{lib_path} #{repos_url} #{branch}"
+
+  end
+
   def split_common(lib_path, repos_url, branch)
 
     o = self.read_json
@@ -104,6 +118,7 @@ class GitSubtreePackage
     # ruby git_subtree_package/lib/git_subtree_package.rb split git_subtree_package ../git_subtree_package
     # ruby git_subtree_package/lib/git_subtree_package.rb split test_package tmp/test_package master
     # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split test_package dycoon/test_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split git_subtree_package dycoon/git_subtree_package
 
     puts_flush "args #{args.inspect}"
 
@@ -125,6 +140,7 @@ class GitSubtreePackage
       flag = @private ? "-p" : ""
       self.call_system "hub create #{flag} #{repos_path}"
       repos_url = "git@github.com:#{repos_path}.git"
+      FileUtils.rm_rf "git_subtree_package/tmp"
 
     else
       FileUtils.mkdir_p repos_path
@@ -154,6 +170,47 @@ class GitSubtreePackage
     Dir.chdir root
 
     split_common(lib_path, repos_url, branch)
+
+  end
+
+  def push(args)
+    # ruby git_subtree_package/lib/git_subtree_package.rb push git_subtree_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
+
+    here = Dir.pwd
+
+    sub_path = args[0]
+    branch = args[1] || "master"
+
+    self.cd_to_root
+    root = Dir.pwd
+
+    lib_path = Pathname.new(File.join(here, sub_path
+      ).relative_path_from(Pathname.new(root))).to_s
+
+    o = self.read_json
+
+    self.push_common(lib_path, o["packages"]["repos_url"], branch)
+  end
+
+  def pull(args)
+    # ruby git_subtree_package/lib/git_subtree_package.rb pull git_subtree_package master
+    # ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
+
+    here = Dir.pwd
+
+    sub_path = args[0]
+    branch = args[1] || "master"
+
+    self.cd_to_root
+    root = Dir.pwd
+
+    lib_path = Pathname.new(File.join(here, sub_path
+      ).relative_path_from(Pathname.new(root))).to_s
+
+    o = self.read_json
+
+    self.pull_common(lib_path, o["packages"]["repos_url"], branch)
 
   end
 
