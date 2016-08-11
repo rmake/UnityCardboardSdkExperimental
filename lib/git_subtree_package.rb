@@ -36,6 +36,11 @@ class GitSubtreePackage
       @github= true
     end
 
+    if ARGV.length <= 0
+      self.help
+      return
+    end
+
     argv = opt.parse(ARGV)
 
     case argv[0]
@@ -295,6 +300,16 @@ class GitSubtreePackage
 
     self.write_json o
 
+  end
+
+  def help
+    puts_flush <<EOS
+ruby git_subtree_package/lib/git_subtree_package.rb split --github -p test_package dycoon/test_package master
+ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
+ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
+ruby git_subtree_package/lib/git_subtree_package.rb add --github test_package dycoon/test_package master
+ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
+EOS
   end
 
 end
