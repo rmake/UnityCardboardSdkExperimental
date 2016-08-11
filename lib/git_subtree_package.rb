@@ -107,6 +107,7 @@ class GitSubtreePackage
     here = Dir.pwd
 
     puts_flush "here #{here}"
+    puts_flush "@github #{@github}"
 
     if @github
       self.cd_to_root
