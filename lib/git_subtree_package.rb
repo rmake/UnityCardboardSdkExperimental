@@ -70,7 +70,7 @@ module GitSubtreePackage
     end
 
     def self.run
-      package = GitSubtreePackage.new
+      package = Manager.new
 
       package.run
 
