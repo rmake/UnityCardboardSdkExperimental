@@ -32,7 +32,6 @@ RSpec.describe GitSubtreePackage::Manager do
     call_system "git push origin master"
     call_system "git subtree add --prefix=git_subtree_package #{GitSubtreePackage::Manager::PACKAGE_REPOS} master"
     call_system "ruby git_subtree_package/lib/git_subtree_package.rb init"
-    call_system "ruby git_subtree_package/lib/git_subtree_package.rb add --github #{GitSubtreePackage::Manager::PACKAGE_REPOS} master"
     call_system "git add ."
     call_system "git commit -m 'add: git_subtree_package'"
 
@@ -86,6 +85,7 @@ module 2
 module 3
 EOS
 
+    call_system "ruby git_subtree_package/lib/git_subtree_package.rb pull git_subtree_package master"
 
     #call_system "git lga -n 20"
 

@@ -78,7 +78,11 @@ module GitSubtreePackage
 
     def init
       o = {
-        "packages" => {},
+        "packages" => {
+          "git_subtree_package" => {
+           "repos_url" => PACKAGE_REPOS
+          }
+        },
       }
 
       self.write_json o
@@ -330,7 +334,6 @@ examples:
 install:
   git subtree add --prefix=git_subtree_package #{PACKAGE_REPOS} master
   ruby git_subtree_package/lib/git_subtree_package.rb init
-  ruby git_subtree_package/lib/git_subtree_package.rb add --github #{PACKAGE_REPOS} master
 EOS
     end
 
