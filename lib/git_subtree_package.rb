@@ -105,7 +105,7 @@ module GitSubtreePackage
     end
 
     def get_repos_url(repos_path)
-      if repos_url.match(/^http/) || repos_url.match(/@github\.com:/)
+      if repos_path.match(/^http/) || repos_path.match(/@github\.com:/)
         return repos_path
       end
       "git@github.com:#{repos_path}.git"
