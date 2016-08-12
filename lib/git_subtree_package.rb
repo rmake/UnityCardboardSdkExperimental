@@ -24,7 +24,7 @@ module GitSubtreePackage
 
   class Manager
 
-    PACKAGE_REPOS = "git@github.com:dycoon/git_subtree_package.git"
+    PACKAGE_REPOS = "git@github.com:rmake/git_subtree_package.git"
     PACKAGE_JSON = "git_subtree_package.json"
 
     include Utility
