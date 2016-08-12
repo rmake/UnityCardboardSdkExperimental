@@ -3,318 +3,342 @@ require "fileutils"
 require "optparse"
 require "pathname"
 
-class GitSubtreePackage
 
-  PACKAGE_JSON = "git_subtree_package.json"
+module GitSubtreePackage
 
-  def puts_flush *args
-    puts *args
-    STDOUT.flush
-  end
-
-  def call_system cmd
-    puts_flush "cmd #{cmd}"
-    unless system cmd
-      raise "failed! #{cmd}"
-    end
-  end
-
-  def run
-    mode = nil
-
-    opt = OptionParser.new
-
-    options = {
-      :private => false,
-      :github => false,
-    }
-
-    opt.on('-p') do |v|
-      @private = true
-    end
-    opt.on('--github') do |v|
-      @github= true
+  module Utility
+    def puts_flush *args
+      puts *args
+      STDOUT.flush
     end
 
-    if ARGV.length <= 0
-      self.help
-      return
+    def call_system cmd
+      puts_flush "cmd #{cmd}"
+      unless system cmd
+        raise "failed! #{cmd}"
+      end
     end
 
-    argv = opt.parse(ARGV)
+  end
 
-    case argv[0]
-    when "init"
-      self.init
-    when "split"
-      self.split argv[1..-1]
-    when "push"
-      self.push argv[1..-1]
-    when "pull"
-      self.pull argv[1..-1]
-    when "add"
-      self.add argv[1..-1]
-    when "remove"
-      self.remove argv[1..-1]
+
+  class Manager
+
+    PACKAGE_REPOS = "git@github.com:dycoon/git_subtree_package.git"
+    PACKAGE_JSON = "git_subtree_package.json"
+
+    include Utility
+
+    def run
+      mode = nil
+
+      opt = OptionParser.new
+
+      options = {
+        :private => false,
+        :github => false,
+      }
+
+      opt.on('-p') do |v|
+        @private = true
+      end
+      opt.on('--github') do |v|
+        @github= true
+      end
+
+      if ARGV.length <= 0
+        self.help
+        return
+      end
+
+      argv = opt.parse(ARGV)
+
+      case argv[0]
+      when "init"
+        self.init
+      when "split"
+        self.split argv[1..-1]
+      when "push"
+        self.push argv[1..-1]
+      when "pull"
+        self.pull argv[1..-1]
+      when "add"
+        self.add argv[1..-1]
+      when "remove"
+        self.remove argv[1..-1]
+      end
     end
-  end
 
-  def self.run
-    package = GitSubtreePackage.new
+    def self.run
+      package = GitSubtreePackage.new
 
-    package.run
+      package.run
 
-  end
-
-  def init
-    o = {
-      "packages" => {},
-    }
-
-    self.write_json o
-  end
-
-  def read_json
-    JSON.parse File.read(PACKAGE_JSON)
-  end
-
-  def write_json(o)
-    File.write PACKAGE_JSON, JSON.pretty_generate(o)
-  end
-
-  def cd_to_root
-    while !File.exist?(PACKAGE_JSON)
-      c = Dir.pwd
-      Dir.chdir ".."
-      break if c != Dir.pwd
     end
-  end
 
-  def push_common(lib_path, repos_url, branch)
-    puts_flush "lib_path #{lib_path}"
-    puts_flush "repos_url #{repos_url}"
+    def init
+      o = {
+        "packages" => {},
+      }
 
-    self.call_system "git subtree push --prefix=#{lib_path} #{repos_url} #{branch}"
-    self.call_system "git subtree split --prefix=#{lib_path} --rejoin"
+      self.write_json o
+    end
 
-  end
+    def read_json
+      JSON.parse File.read(PACKAGE_JSON)
+    end
 
-  def pull_common(lib_path, repos_url, branch)
-    puts_flush "lib_path #{lib_path}"
-    puts_flush "repos_url #{repos_url}"
+    def write_json(o)
+      File.write PACKAGE_JSON, JSON.pretty_generate(o)
+    end
 
-    self.call_system "git subtree pull  -m'merge' --prefix=#{lib_path} #{repos_url} #{branch}"
+    def cd_to_root
+      while !File.exist?(PACKAGE_JSON)
+        c = Dir.pwd
+        Dir.chdir ".."
+        break if c != Dir.pwd
+      end
+    end
 
-  end
+    def get_repos_url(repos_path)
+      if repos_url.match(/^http/) || repos_url.match(/@github\.com:/)
+        return repos_path
+      end
+      "git@github.com:#{repos_path}.git"
+    end
 
-  def split_common(lib_path, repos_url, branch)
+    def push_common(lib_path, repos_url, branch)
+      puts_flush "lib_path #{lib_path}"
+      puts_flush "repos_url #{repos_url}"
 
-    o = self.read_json
+      self.call_system "git subtree push --prefix=#{lib_path} #{repos_url} #{branch}"
+      self.call_system "git subtree split --prefix=#{lib_path} --rejoin"
 
-    self.push_common(lib_path, repos_url, branch)
+    end
 
-    o["packages"][lib_path] = {
-      "repos_url" => repos_url
-    }
+    def pull_common(lib_path, repos_url, branch)
+      puts_flush "lib_path #{lib_path}"
+      puts_flush "repos_url #{repos_url}"
 
-    self.write_json o
-  end
+      self.call_system "git subtree pull  -m'merge' --prefix=#{lib_path} #{repos_url} #{branch}"
 
-  def split(args)
+    end
 
-    # ruby git_subtree_package/lib/git_subtree_package.rb split git_subtree_package ../git_subtree_package
-    # ruby git_subtree_package/lib/git_subtree_package.rb split test_package tmp/test_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split test_package dycoon/test_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split git_subtree_package dycoon/git_subtree_package
+    def split_common(lib_path, repos_url, branch)
 
-    puts_flush "args #{args.inspect}"
+      o = self.read_json
 
-    sub_path = args[0]
-    repos_path = args[1]
-    branch = args[2] || "master"
+      self.push_common(lib_path, repos_url, branch)
 
-    here = Dir.pwd
+      o["packages"][lib_path] = {
+        "repos_url" => repos_url
+      }
 
-    puts_flush "here #{here}"
-    puts_flush "@github #{@github.inspect}"
+      self.write_json o
+    end
 
-    if @github
+    def split(args)
+
+      # ruby git_subtree_package/lib/git_subtree_package.rb split git_subtree_package ../git_subtree_package
+      # ruby git_subtree_package/lib/git_subtree_package.rb split test_package tmp/test_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split test_package dycoon/test_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb --github -p split git_subtree_package dycoon/git_subtree_package
+
+      puts_flush "args #{args.inspect}"
+
+      sub_path = args[0]
+      repos_path = args[1]
+      branch = args[2] || "master"
+
+      here = Dir.pwd
+
+      puts_flush "here #{here}"
+      puts_flush "@github #{@github.inspect}"
+
+      if @github
+        self.cd_to_root
+        tmp_repos = "git_subtree_package/tmp/tmp_repos"
+        FileUtils.mkdir_p "git_subtree_package/tmp/tmp_repos"
+        Dir.chdir "git_subtree_package/tmp/tmp_repos"
+        self.call_system "git init"
+        flag = @private ? "-p" : ""
+        self.call_system "hub create #{flag} #{repos_path}"
+        repos_url = self.get_repos_url repos_path
+        FileUtils.rm_rf "git_subtree_package/tmp"
+
+      else
+        FileUtils.mkdir_p repos_path
+        Dir.chdir repos_path
+        repos_absolute_path = Dir.pwd
+        puts_flush "repos_absolute_path #{repos_absolute_path}"
+
+        self.call_system "git init --bare"
+      end
+
+      Dir.chdir here
       self.cd_to_root
-      tmp_repos = "git_subtree_package/tmp/tmp_repos"
-      FileUtils.mkdir_p "git_subtree_package/tmp/tmp_repos"
-      Dir.chdir "git_subtree_package/tmp/tmp_repos"
-      self.call_system "git init"
-      flag = @private ? "-p" : ""
-      self.call_system "hub create #{flag} #{repos_path}"
-      repos_url = "git@github.com:#{repos_path}.git"
-      FileUtils.rm_rf "git_subtree_package/tmp"
+      root = Dir.pwd
 
-    else
-      FileUtils.mkdir_p repos_path
-      Dir.chdir repos_path
-      repos_absolute_path = Dir.pwd
-      puts_flush "repos_absolute_path #{repos_absolute_path}"
+      unless @github
+        repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      end
 
-      self.call_system "git init --bare"
+      puts_flush "root #{root}"
+
+      Dir.chdir here
+      Dir.chdir sub_path
+      sub_absolute_path = Dir.pwd
+
+      lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
+
+      Dir.chdir root
+
+      split_common(lib_path, repos_url, branch)
+
     end
 
-    Dir.chdir here
-    self.cd_to_root
-    root = Dir.pwd
+    def push(args)
+      # ruby git_subtree_package/lib/git_subtree_package.rb push git_subtree_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
 
-    unless @github
-      repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      here = Dir.pwd
+
+      sub_path = args[0]
+      branch = args[1] || "master"
+
+      self.cd_to_root
+      root = Dir.pwd
+
+      lib_path = Pathname.new(File.join(here, sub_path
+        )).relative_path_from(Pathname.new(root)).to_s
+
+      o = self.read_json
+
+      self.push_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
     end
 
-    puts_flush "root #{root}"
+    def pull(args)
+      # ruby git_subtree_package/lib/git_subtree_package.rb pull git_subtree_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
 
-    Dir.chdir here
-    Dir.chdir sub_path
-    sub_absolute_path = Dir.pwd
+      here = Dir.pwd
 
-    lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      sub_path = args[0]
+      branch = args[1] || "master"
 
-    Dir.chdir root
+      self.cd_to_root
+      root = Dir.pwd
 
-    split_common(lib_path, repos_url, branch)
+      lib_path = Pathname.new(File.join(here, sub_path
+        )).relative_path_from(Pathname.new(root)).to_s
 
-  end
+      o = self.read_json
 
-  def push(args)
-    # ruby git_subtree_package/lib/git_subtree_package.rb push git_subtree_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
+      self.pull_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
 
-    here = Dir.pwd
-
-    sub_path = args[0]
-    branch = args[1] || "master"
-
-    self.cd_to_root
-    root = Dir.pwd
-
-    lib_path = Pathname.new(File.join(here, sub_path
-      )).relative_path_from(Pathname.new(root)).to_s
-
-    o = self.read_json
-
-    self.push_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
-  end
-
-  def pull(args)
-    # ruby git_subtree_package/lib/git_subtree_package.rb pull git_subtree_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
-
-    here = Dir.pwd
-
-    sub_path = args[0]
-    branch = args[1] || "master"
-
-    self.cd_to_root
-    root = Dir.pwd
-
-    lib_path = Pathname.new(File.join(here, sub_path
-      )).relative_path_from(Pathname.new(root)).to_s
-
-    o = self.read_json
-
-    self.pull_common(lib_path, o["packages"][lib_path]["repos_url"], branch)
-
-  end
-
-  def add(args)
-    # ruby git_subtree_package/lib/git_subtree_package.rb add git_subtree_package ../git_subtree_package
-    # ruby git_subtree_package/lib/git_subtree_package.rb add test_package tmp/test_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb --github add test_package dycoon/test_package master
-    # ruby git_subtree_package/lib/git_subtree_package.rb --github add git_subtree_package dycoon/git_subtree_package
-
-    puts_flush "args #{args.inspect}"
-
-    sub_path = args[0]
-    repos_path = args[1]
-    branch = args[2] || "master"
-
-    here = Dir.pwd
-
-    puts_flush "here #{here}"
-    puts_flush "@github #{@github.inspect}"
-
-    if @github
-      repos_url = "git@github.com:#{repos_path}.git"
-
-    else
-      FileUtils.mkdir_p repos_path
-      Dir.chdir repos_path
-      repos_absolute_path = Dir.pwd
-      puts_flush "repos_absolute_path #{repos_absolute_path}"
     end
 
-    Dir.chdir here
-    self.cd_to_root
-    root = Dir.pwd
+    def add(args)
+      # ruby git_subtree_package/lib/git_subtree_package.rb add git_subtree_package ../git_subtree_package
+      # ruby git_subtree_package/lib/git_subtree_package.rb add test_package tmp/test_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb --github add test_package dycoon/test_package master
+      # ruby git_subtree_package/lib/git_subtree_package.rb --github add git_subtree_package dycoon/git_subtree_package
 
-    unless @github
-      repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      puts_flush "args #{args.inspect}"
+
+      sub_path = args[0]
+      repos_path = args[1]
+      branch = args[2] || "master"
+
+      here = Dir.pwd
+
+      puts_flush "here #{here}"
+      puts_flush "@github #{@github.inspect}"
+
+      if @github
+        repos_url = self.get_repos_url repos_path
+
+      else
+        FileUtils.mkdir_p repos_path
+        Dir.chdir repos_path
+        repos_absolute_path = Dir.pwd
+        puts_flush "repos_absolute_path #{repos_absolute_path}"
+      end
+
+      Dir.chdir here
+      self.cd_to_root
+      root = Dir.pwd
+
+      unless @github
+        repos_url = Pathname.new(repos_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      end
+
+      puts_flush "root #{root}"
+
+      Dir.chdir here
+      sub_absolute_path = File.join(here,sub_path)
+
+      lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
+
+      #
+      self.call_system "git subtree add --prefix=#{lib_path} #{repos_url} #{branch}"
+
+      #
+      o = self.read_json
+
+      o["packages"][lib_path] = {
+        "repos_url" => repos_url
+      }
+
+      self.write_json o
+
     end
 
-    puts_flush "root #{root}"
+    def remove(args)
+      # ruby git_subtree_package/lib/git_subtree_package.rb remove git_subtree_package
+      # ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
 
-    Dir.chdir here
-    sub_absolute_path = File.join(here,sub_path)
+      sub_path = args[0]
 
-    lib_path = Pathname.new(sub_absolute_path).relative_path_from(Pathname.new(root)).to_s
+      here = Dir.pwd
 
-    #
-    self.call_system "git subtree add --prefix=#{lib_path} #{repos_url} #{branch}"
+      self.cd_to_root
+      root = Dir.pwd
 
-    #
-    o = self.read_json
-
-    o["packages"][lib_path] = {
-      "repos_url" => repos_url
-    }
-
-    self.write_json o
-
-  end
-
-  def remove(args)
-    # ruby git_subtree_package/lib/git_subtree_package.rb remove git_subtree_package
-    # ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
-
-    sub_path = args[0]
-
-    here = Dir.pwd
-
-    self.cd_to_root
-    root = Dir.pwd
-
-    lib_path = Pathname.new(File.join(here, sub_path
-      )).relative_path_from(Pathname.new(root)).to_s
+      lib_path = Pathname.new(File.join(here, sub_path
+        )).relative_path_from(Pathname.new(root)).to_s
 
 
-    o = self.read_json
+      o = self.read_json
 
-    FileUtils.rm_rf lib_path
+      FileUtils.rm_rf lib_path
 
-    o["packages"].delete lib_path
+      o["packages"].delete lib_path
 
-    self.write_json o
+      self.write_json o
 
-  end
+    end
 
-  def help
-    puts_flush <<EOS
-ruby git_subtree_package/lib/git_subtree_package.rb split --github -p test_package dycoon/test_package master
-ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
-ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
-ruby git_subtree_package/lib/git_subtree_package.rb add --github test_package dycoon/test_package master
-ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
+    def help
+      puts_flush <<EOS
+examples:
+  ruby git_subtree_package/lib/git_subtree_package.rb split --github -p test_package dycoon/test_package master
+  ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
+  ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
+  ruby git_subtree_package/lib/git_subtree_package.rb add --github test_package dycoon/test_package master
+  ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
+install:
+  git subtree add --prefix=git_subtree_package #{PACKAGE_REPOS} master
+  ruby git_subtree_package/lib/git_subtree_package.rb init
+  ruby git_subtree_package/lib/git_subtree_package.rb add --github #{PACKAGE_REPOS} master
 EOS
+    end
+
   end
 
 end
 
 if $0 == __FILE__ then
-  GitSubtreePackage.run
+  GitSubtreePackage::Manager.run
 end
 
