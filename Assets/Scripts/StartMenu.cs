@@ -34,13 +34,16 @@ public class StartMenu : MonoBehaviour {
                 new Dictionary<string, ScrollListView.Callback>(){
                     { "google sample", () => {
                         SceneManager.LoadScene("GoogleVR/DemoScenes/HeadsetDemo/DemoScene", LoadSceneMode.Single);
+                    } },
+                    { "360 degree photo", () => {
+                        SceneManager.LoadScene("Scenes/Main", LoadSceneMode.Single);
                     } }
                 }
             }
         };
 
         tabbedScrollList = ScrollListView.CreateTabedScroll(new Rect(5, -5, 160, 280), 32, tabbedCallbacks);
-        tabbedScrollList.transform.SetParent(canvas.transform);
+        tabbedScrollList.transform.SetParent(canvas.transform, false);
 
     }
 	
