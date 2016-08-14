@@ -10,7 +10,7 @@ public class ScrollListView
 
     public static GameObject Create(Dictionary<string, Callback> callbacks, EachButtonCallback eachButtonCallback, bool isVertical, GameObject canvas = null)
     {
-        var buttonPrefab = Resources.Load<GameObject>("UtilityUi/ButtonForScrollView");
+        var buttonPrefab = Resources.Load<GameObject>("RmakeUnityUiUtility/ButtonForScrollView");
 
         var scrollList = new GameObject("ScrollList");
         
