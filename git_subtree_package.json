@@ -5,6 +5,9 @@
     },
     "Assets/RmakeUnityUiUtility": {
       "repos_url": "git@github.com:rmake/RmakeUnityUiUtility.git"
+    },
+    "Assets/Resources/RmakeUnityUiUtility": {
+      "repos_url": "git@github.com:rmake/RmakeUnityUiUtilityResources.git"
     }
   }
 }
