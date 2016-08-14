@@ -1,0 +1,7 @@
+{
+  "packages": {
+    "git_subtree_package": {
+      "repos_url": "git@github.com:rmake/git-subtree-package.git"
+    }
+  }
+}
