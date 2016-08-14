@@ -27,7 +27,13 @@ module GitSubtreePackage
     PACKAGE_REPOS = "git@github.com:rmake/git-subtree-package.git"
     PACKAGE_JSON = "git_subtree_package.json"
 
+    @@execute_path = "git_subtree_package/lib/git_subtree_package.rb"
+
     include Utility
+
+    def self.set_execute_path(execute_path)
+      @@execute_path = execute_path
+    end
 
     def run
       mode = nil
@@ -324,16 +330,19 @@ module GitSubtreePackage
     end
 
     def help
+
+      command = "git_subtree_package/lib/git_subtree_package.rb"
+
       puts_flush <<EOS
 examples:
-  ruby git_subtree_package/lib/git_subtree_package.rb split --github -p test_package dycoon/test_package master
-  ruby git_subtree_package/lib/git_subtree_package.rb push test_package master
-  ruby git_subtree_package/lib/git_subtree_package.rb pull test_package master
-  ruby git_subtree_package/lib/git_subtree_package.rb add --github test_package dycoon/test_package master
-  ruby git_subtree_package/lib/git_subtree_package.rb remove test_package
+  ruby #{@@execute_path} split --github -p test_package dycoon/test_package master
+  ruby #{@@execute_path} push test_package master
+  ruby #{@@execute_path} pull test_package master
+  ruby #{@@execute_path} add --github test_package dycoon/test_package master
+  ruby #{@@execute_path} remove test_package
 install:
   git subtree add --prefix=git_subtree_package #{PACKAGE_REPOS} master
-  ruby git_subtree_package/lib/git_subtree_package.rb init
+  ruby #{@@execute_path} init
 EOS
     end
 
