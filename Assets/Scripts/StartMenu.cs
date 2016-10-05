@@ -32,12 +32,15 @@ public class StartMenu : MonoBehaviour {
 
             {"menu",
                 new Dictionary<string, ScrollListView.Callback>(){
-                    { "google sample", () => {
-                        SceneManager.LoadScene("GoogleVR/DemoScenes/HeadsetDemo/DemoScene", LoadSceneMode.Single);
+                    { "Interior", () => {
+                        SceneManager.LoadScene("Scenes/Interior", LoadSceneMode.Single);
                     } },
                     { "360 degree photo", () => {
                         SceneManager.LoadScene("Scenes/Main", LoadSceneMode.Single);
-                    } }
+                    } },
+                    { "google sample", () => {
+                        SceneManager.LoadScene("GoogleVR/DemoScenes/HeadsetDemo/DemoScene", LoadSceneMode.Single);
+                    } },
                 }
             }
         };
