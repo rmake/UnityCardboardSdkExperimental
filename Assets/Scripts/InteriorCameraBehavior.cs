@@ -101,7 +101,7 @@ public class InteriorCameraBehavior : MonoBehaviour
         {
             if (dragMode == DragMode.Camera)
             {
-                float mouseMoveSize = 1.0f;
+                float mouseMoveSize = 1000.0f / Screen.width;
                 var mouseX = Input.mousePosition.x;
                 var mouseY = Input.mousePosition.y;
                 float dry = (mouseX - oldMouseX) * mouseMoveSize;
@@ -127,7 +127,7 @@ public class InteriorCameraBehavior : MonoBehaviour
             }
             else if (dragMode == DragMode.Object)
             {
-                float mouseMoveSize = 0.01f;
+				float mouseMoveSize = 2.0f / Screen.width;
                 var mouseX = Input.mousePosition.x;
                 var mouseY = Input.mousePosition.y;
                 float drx = (mouseX - oldMouseX) * mouseMoveSize;
